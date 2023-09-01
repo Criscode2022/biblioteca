@@ -1,0 +1,177 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+* {
+  box-sizing: border-box;
+  max-width: 100% !important;
+}
+
+
+#root {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  background: #D3CCE3;
+  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #E9E4F0, #D3CCE3);
+  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right, #E9E4F0, #D3CCE3);
+  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+
+  border: solid black 1px;
+  border-radius: 10pt;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  width: fit-content;
+  min-height: 100vh;
+  height: fit-content;
+}
+
+body {
+
+  background: #314755 !important;
+  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #26a0da, #425561) !important;
+  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right, #3da6d6, #3f535f) !important;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  padding:10px;
+
+}
+
+html {
+  margin: 0;
+  height: 100%;
+
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.app-container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sidebar {
+  flex: 0 0 15%;
+  padding: 1rem;
+  background: #1488CC;
+  background: -webkit-linear-gradient(to right, #2B32B2, #1488CC);
+  background: linear-gradient(to right, #2B32B2, #1488CC);
+  border: solid black 1px;
+  border-radius: 5pt;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  height: 100%;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  margin: 2%;
+  width: fit-content;
+}
+
+
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  max-width: 100% !important;
+}
+
+.main-content * {
+  max-width: 100%;
+}
+
+
+h1 {
+
+  text-align: center !important;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+
+}
+
+
+
+@media (max-width: 950px) {
+  .app-container {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+}
+
+#tit {
+
+  margin: 0;
+  padding: 30pt;
+  font-size: 6rem;
+  color: white;
+  background-image: url(assets/books2.webp) !important;
+  border-top-left-radius: 9pt;
+  border-top-right-radius: 9pt;
+
+
+}
+
+input {
+
+  padding: 10pt;
+}
+
+#flex {
+
+  display: flex;
+  justify-content: space-around;
+  max-width: 100%;
+  gap: 15px;
+}
+
+
+@media (max-width: 580px) {
+
+  #flex {
+    flex-direction: column;
+    gap: 10px;
+
+  }
+
+  button {
+    width: 100% !important;
+  }
+
+@media (max-width: 480px) {
+
+    #tit {
+
+      font-size: 3rem;
+    }
+
+    .app-container {
+
+      width: 95vw;
+
+    }
+
+
+
+    .sidebar {
+
+      width: 90%;
+      margin: 0 auto;
+      margin-bottom: 10px;
+    }
+
+    .sidebar * {
+
+      margin: auto;
+    }
+  }
+}

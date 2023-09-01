@@ -1,0 +1,53 @@
+.filters-container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.filters-container label {
+  margin-right: 20px;
+}
+
+@media (min-width: 768px) {
+  .filters-container {
+    flex-wrap: nowrap;
+  }
+
+}
+
+* {
+  max-width: 100%;
+  width: 100%;
+}
+
+label {
+  width: fit-content;
+}
+
+button {
+  width: fit-content;
+}
+
+label {
+
+  font-weight: bold;
+}
+
+@media (max-width: 767px) {
+
+  input {
+
+    display: block;
+    max-width: 280px !important;
+  }
+
+}
+
+@media (max-width: 564px) {
+
+  .filters-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+}
