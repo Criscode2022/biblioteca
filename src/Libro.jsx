@@ -1,22 +1,22 @@
-import Card from 'react-bootstrap/Card';
-import ButtonGroup from 'react-bootstrap/ButtonGroup';
-import Button from 'react-bootstrap/Button';
 import PropTypes from 'prop-types';
+import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Card from 'react-bootstrap/Card';
 
 
 const Libro = ({ libro, eliminarLibro }) => {
   return (
     <Card style={{ width: '18rem', marginBottom: '1rem' }}>
-      <Card.Img variant="top" src={libro.imagen} style={{ height: '200px', objectFit: 'cover' }} />
+      <Card.Img variant="top" src={libro.imagen} style={{ width: '100%', height: 'auto' }} />
       <Card.Body>
         <Card.Title>{libro.titulo}</Card.Title>
         <Card.Text>
-          <strong>Autor</strong>: {libro.autor}<br/>
-          <strong>Año</strong>: {libro.year}<br/>
+          <strong>Autor</strong>: {libro.autor}<br />
+          <strong>Año</strong>: {libro.year}<br />
           <strong>Editorial</strong>: {libro.editorial}
         </Card.Text>
         <ButtonGroup aria-label="Basic example">
-          <Button variant="danger" onClick={() => eliminarLibro(libro.id)}>Eliminar</Button>
+          <Button variant="danger" className='text-black hover:!text-white mt-4' onClick={() => eliminarLibro(libro.id)}>Eliminar</Button>
         </ButtonGroup>
       </Card.Body>
     </Card>

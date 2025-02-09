@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import './FormularioLibros.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useState } from 'react';
 
 const FormularioLibros = ({ addLibro }) => {
   const [titulo, setTitulo] = useState('');
@@ -17,20 +16,20 @@ const FormularioLibros = ({ addLibro }) => {
       setErrorMsg("Por favor, rellena todos los campos.");
       return;
     }
-    
-    const validYear = parseInt(year); 
+
+    const validYear = parseInt(year);
     if (!validYear || year.length > 5) {
       setErrorMsg("Por favor, introduce un año válido.");
       return;
     }
-    
+
     setErrorMsg('');
 
     addLibro(titulo, autor, validYear, editorial, imagen);
     setTitulo('');
     setAutor('');
     setImagen('');
-    setYear('');  
+    setYear('');
     setEditorial('');
   };
 
@@ -47,58 +46,58 @@ const FormularioLibros = ({ addLibro }) => {
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Añadir libro</h2>
+      <h2 className="text-2xl font-bold mt-2 text-white mb-4">Añadir libro</h2>
 
       <div className="flex">
-          <input
-            type="text"
-            placeholder='Título'
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md dark:text-white"
-            maxLength={60}
-          />
+        <input
+          type="text"
+          placeholder='Título'
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md "
+          maxLength={60}
+        />
       </div>
 
       <div className="flex">
-          <input
-            type="text"
-            placeholder='Autor'
-            value={autor}
-            onChange={(e) => setAutor(e.target.value)}
-            className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md dark:text-white"
-            maxLength={40}
+        <input
+          type="text"
+          placeholder='Autor'
+          value={autor}
+          onChange={(e) => setAutor(e.target.value)}
+          className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md "
+          maxLength={40}
 
-          />
+        />
       </div>
 
       <div className="flex">
-          <input
-            type="number"
-            placeholder='Año'
-            value={year}  
-            onChange={(e) => {
-              const value = Number(e.target.value);
-              setYear(isNaN(value) ? '' : value.toString());  
-            }}
-            className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md dark:text-white"
-            max={9999}
-          />
+        <input
+          type="number"
+          placeholder='Año'
+          value={year}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setYear(isNaN(value) ? '' : value.toString());
+          }}
+          className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md "
+          max={9999}
+        />
       </div>
 
       <div className="flex">
-          <input
-            type="text"
-            placeholder='Editorial'
-            value={editorial}
-            onChange={(e) => setEditorial(e.target.value)}
-            className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md dark:text-white"
-            maxLength={30}
-          />
+        <input
+          type="text"
+          placeholder='Editorial'
+          value={editorial}
+          onChange={(e) => setEditorial(e.target.value)}
+          className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md "
+          maxLength={30}
+        />
       </div>
 
-      <div id='divIMG' className="flex">
-        <label className="block mb-4 flex-grow">
+      <div className="flex mt-5">
+        <label className="block mb-4 flex-grow text-white">
           Selecciona la portada del libro:
           <input
             type="file"
