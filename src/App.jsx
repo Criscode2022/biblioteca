@@ -1,5 +1,5 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
 import './App.css';
 import FiltroLibros from './FiltroLibros.jsx';
@@ -7,101 +7,98 @@ import FormularioLibros from './FormularioLibros';
 import ListaLibros from './ListaLibros';
 
 const App = () => {
-  const [libros, setLibros] = useState(JSON.parse(localStorage.getItem('libros')) || []);
-  const [filtros, setFiltros] = useState({ titulo: "", autor: "", year: null, editorial: "" });
-  const [filteredLibros, setFilteredLibros] = useState(libros);
-
-  const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(
-      libros.map(libro => {
-        const { imagen, ...libroSinImagen } = libro;
-        return libroSinImagen;
-      })
-    );
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Libros");
-    XLSX.writeFile(wb, `libros.xlsx`);
-  }
+  const [books, setBooks] = useState(JSON.parse(localStorage.getItem('books')) || []);
+  const [filters, setFilters] = useState({ titulo: "", autor: "", year: null, editorial: "" });
+  const [filteredBooks, setFilteredBooks] = useState(books);
 
   useEffect(() => {
-    localStorage.setItem('libros', JSON.stringify(libros));
-  }, [libros]);
+    localStorage.setItem('books', JSON.stringify(books));
+  }, [books]);
 
   useEffect(() => {
-    setFilteredLibros(
-      libros.filter(libro => {
+    setFilteredBooks(
+      books.filter(libro => {
         return (
-          (filtros.titulo ? libro.titulo.toLowerCase().includes(filtros.titulo.toLowerCase()) : true) &&
-          (filtros.autor ? libro.autor.toLowerCase().includes(filtros.autor.toLowerCase()) : true) &&
-          (filtros.year ? parseInt(libro.year) === parseInt(filtros.year) : true) &&
-          (filtros.editorial ? libro.editorial.toLowerCase().includes(filtros.editorial.toLowerCase()) : true)
+          (filters.titulo ? libro.titulo.toLowerCase().includes(filters.titulo.toLowerCase()) : true) &&
+          (filters.autor ? libro.autor.toLowerCase().includes(filters.autor.toLowerCase()) : true) &&
+          (filters.year ? parseInt(libro.year) === parseInt(filters.year) : true) &&
+          (filters.editorial ? libro.editorial.toLowerCase().includes(filters.editorial.toLowerCase()) : true)
         );
       })
     );
-  }, [libros, filtros]);
+  }, [books, filters]);
 
+  const exportToExcel = () => {
+    const formattedData = books.map(({ id, imagen, ...rest }) => rest);
 
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
 
-  const addLibro = (titulo, autor, year, editorial, imagen) => {
-    setLibros((librosPrevios) => [
-      ...librosPrevios,
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Libros");
+
+    XLSX.writeFile(workbook, "libros.xlsx");
+  };
+
+  const addBook = (titulo, autor, year, editorial, imagen) => {
+    setBooks((existingBooks) => [
+      ...existingBooks,
       { id: Math.random(), titulo, autor, year, editorial, imagen }
     ]);
   };
 
-  const eliminarLibro = (id) => {
-    setLibros(libros.filter(libro => libro.id !== id));
+  const deleteBook = (id) => {
+    setBooks(books.filter(libro => libro.id !== id));
   };
 
   return (
-    <div className="App">
-      <h1 className='title'>Biblioteca</h1>
-      <div className="app-container">
+    <>
 
-        <div className="sidebar">
-          <FormularioLibros addLibro={addLibro} />
+      <h1 className='text-4xl sm:text-8xl'>Biblioteca</h1>
+
+      <div className="flex w-full flex-col-reverse justify-center items-center md:flex-row md:items-start md:justify-between">
+
+        <div className="sidebar w-[95%] md:w-auto font-bold p-3 m-2 md:!m-4">
+          <FormularioLibros addLibro={addBook} />
         </div>
-        <div className="main-content">
-          <FiltroLibros filtros={filtros} setFiltros={setFiltros} />
-          <ListaLibros libros={filteredLibros} eliminarLibro={eliminarLibro} />
-          <div id='flex'>
-            <button className="text-black bg-white" onClick={exportToExcel}>Descargar libros como XLSX</button>
+        <main className="p-4 w-full">
+          <FiltroLibros filtros={filters} setFiltros={setFilters} />
+          <ListaLibros libros={filteredBooks} deleteBook={deleteBook} />
+
+          <div className='flex flex-col md:flex-row justify-end gap-2 md:!gap-4'>
+            <button className="text-black bg-white" onClick={exportToExcel} disabled>Descargar Excel</button>
             <button
               className="text-black bg-white"
               onClick={() => {
-                const data = JSON.stringify(libros);
+                const data = JSON.stringify(books);
                 const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(data)}`;
                 const link = document.createElement('a');
                 link.href = dataUri;
-                link.download = 'libros.json';
+                link.download = 'books.json';
                 link.click();
               }}
             >
-
               Exportar libros
             </button>
-
-
-
-            <label>
-              Importar libros:
-              <input
-                type="file"
-                accept=".json"
-                onChange={e => {
-                  const fileReader = new FileReader();
-                  fileReader.readAsText(e.target.files[0], "UTF-8");
-                  fileReader.onload = e => {
-                    setLibros(JSON.parse(e.target.result));
-                  };
-                }}
-              />
-            </label>
+            <button className="text-black bg-white" onClick={() => document.getElementById("importInput").click()}
+            >Importar libros</button>
           </div>
-        </div>
+
+          <input
+            id="importInput"
+            type="file"
+            accept="image/*"
+            onChange={e => {
+              const fileReader = new FileReader();
+              fileReader.readAsText(e.target.files[0], "UTF-8");
+              fileReader.onload = e => {
+                setBooks(JSON.parse(e.target.result));
+              };
+            }} className="hidden"
+          />
+
+        </main>
       </div>
-    </div>
+    </>
   );
 };
 

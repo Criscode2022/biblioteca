@@ -4,10 +4,11 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Card from 'react-bootstrap/Card';
 
 
-const Libro = ({ libro, eliminarLibro }) => {
+const Libro = ({ libro, deleteBook }) => {
   return (
-    <Card style={{ width: '18rem', marginBottom: '1rem' }}>
-      <Card.Img variant="top" src={libro.imagen} style={{ width: '100%', height: 'auto' }} />
+    <Card className='w-full sm:w-72'>
+      <Card.Img variant="top" src={libro.imagen ? libro.imagen : `https://placehold.co/700x800?text=${encodeURIComponent(libro.titulo)}`}
+        className='max-h-64 sm:max-h-56 sm:w-52 rounded-lg w-56 m-auto' />
       <Card.Body>
         <Card.Title>{libro.titulo}</Card.Title>
         <Card.Text>
@@ -16,7 +17,7 @@ const Libro = ({ libro, eliminarLibro }) => {
           <strong>Editorial</strong>: {libro.editorial}
         </Card.Text>
         <ButtonGroup aria-label="Basic example">
-          <Button variant="danger" className='text-black hover:!text-white mt-4' onClick={() => eliminarLibro(libro.id)}>Eliminar</Button>
+          <Button variant="danger" className='text-black hover:!text-white mt-4' onClick={() => deleteBook(libro.id)}>Eliminar</Button>
         </ButtonGroup>
       </Card.Body>
     </Card>
@@ -32,7 +33,7 @@ Libro.propTypes = {
     editorial: PropTypes.string.isRequired,
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   }).isRequired,
-  eliminarLibro: PropTypes.func.isRequired,
+  deleteBook: PropTypes.func.isRequired,
 };
 
 

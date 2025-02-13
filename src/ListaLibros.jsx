@@ -1,13 +1,13 @@
 import Libro from './Libro';
 import './ListaLibros.css';
 
-const ListaLibros = ({ libros, eliminarLibro }) => (
-  <div id='listaLibros' className="d-flex flex-wrap justify-content-center">
+const ListaLibros = ({ libros, deleteBook }) => (
+  <div id='listaLibros' className="flex flex-wrap justify-center gap-4 mb-4">
     {libros.map((libro, index) => (
       <Libro
         key={index}
         libro={libro}
-        eliminarLibro={eliminarLibro}
+        deleteBook={deleteBook}
       />
     ))}
   </div>

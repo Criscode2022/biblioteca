@@ -11,12 +11,12 @@ const FiltroLibros = ({ filtros, setFiltros }) => {
 
   return (
     <>
-      <div className="!hidden md:!flex justify-around gap-4">
+      <div className="hidden md:flex justify-end gap-4">
 
         <label className="font-semibold mb-4">
-          Título:
+          Título
           <input
-            placeholder="Filtrar"
+            placeholder="Buscar por título"
             className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md"
             type="text"
             name="titulo"
@@ -27,9 +27,9 @@ const FiltroLibros = ({ filtros, setFiltros }) => {
         </label>
 
         <label className="font-semibold mb-4">
-          Autor:
+          Autor
           <input
-            placeholder="Filtrar"
+            placeholder="Buscar por autor"
             className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md"
             type="text"
             name="autor"
@@ -40,9 +40,9 @@ const FiltroLibros = ({ filtros, setFiltros }) => {
         </label>
 
         <label className="font-semibold mb-4">
-          Año:
+          Año
           <input
-            placeholder="Filtrar"
+            placeholder="Buscar por año"
             className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md "
             type="number"
             name="year"
@@ -53,9 +53,9 @@ const FiltroLibros = ({ filtros, setFiltros }) => {
         </label>
 
         <label className="font-semibold mb-4">
-          Editorial:
+          Editorial
           <input
-            placeholder="Filtrar"
+            placeholder="Buscar por editorial"
             className="border border-gray-300 px-3 py-2 mt-1 rounded w-full max-w-md "
             type="text"
             name="editorial"
@@ -68,7 +68,7 @@ const FiltroLibros = ({ filtros, setFiltros }) => {
 
       <div className="md:hidden flex flex-col">
         <details>
-          <summary className="bg-white  rounded shadow px-4 py-2 mb-2">Buscar</summary>
+          <summary className="bg-white  rounded shadow-sm px-4 py-2 mb-2">Buscar</summary>
 
           <label className="w-full font-semibold mb-4">
             Título
