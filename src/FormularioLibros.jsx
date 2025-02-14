@@ -52,7 +52,7 @@ const FormularioLibros = ({ addLibro }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto">
+    <form onSubmit={handleSubmit}>
       <h2 className="text-2xl font-bold mt-2 text-white mb-4">Añadir libro</h2>
 
       <div className="flex">

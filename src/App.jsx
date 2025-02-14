@@ -57,7 +57,7 @@ const App = () => {
 
       <div className="flex w-full flex-col-reverse justify-center items-center md:flex-row md:items-start md:justify-between">
 
-        <div className="sidebar w-[95%] md:w-auto font-bold p-3 m-2 md:!m-4">
+        <div className="sidebar hidden md:block w-full md:w-auto font-bold p-3 m-2 md:!m-8">
           <FormularioLibros addLibro={addBook} />
         </div>
         <main className="p-4 w-full">
@@ -65,9 +65,9 @@ const App = () => {
           <ListaLibros libros={filteredBooks} deleteBook={deleteBook} />
 
           <div className='flex flex-col md:flex-row justify-end gap-2 md:!gap-4'>
-            <button className="text-black bg-white" onClick={exportToExcel} disabled>Descargar Excel</button>
+            <button className="btn text-black bg-white" onClick={exportToExcel} disabled={!books.length}>Descargar Excel</button>
             <button
-              className="text-black bg-white"
+              className="btn text-black bg-white"
               onClick={() => {
                 const data = JSON.stringify(books);
                 const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(data)}`;
@@ -76,11 +76,16 @@ const App = () => {
                 link.download = 'books.json';
                 link.click();
               }}
+              disabled={!books.length}
             >
               Exportar libros
             </button>
-            <button className="text-black bg-white" onClick={() => document.getElementById("importInput").click()}
+            <button className="btn text-black bg-white" onClick={() => document.getElementById("importInput").click()}
             >Importar libros</button>
+
+            <div className="md:hidden sidebar md:w-auto font-bold p-3 my-2 md:!m-8">
+              <FormularioLibros addLibro={addBook} />
+            </div>
           </div>
 
           <input
