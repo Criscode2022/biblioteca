@@ -103,7 +103,7 @@ const App = () => {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-3 py-6 sm:px-6 sm:py-10">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-3 py-6 sm:px-6 sm:py-10">
       <div className="overflow-hidden rounded-3xl bg-white/95 shadow-2xl ring-1 ring-black/5 backdrop-blur">
         {/* Header with background image (kept by request) */}
         <header className="app-header px-6 py-12 text-center sm:px-10 sm:py-16">
@@ -122,7 +122,7 @@ const App = () => {
           </span>
         </header>
 
-        <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[340px_minmax(0,1fr)]">
           {/* Sidebar form */}
           <aside className="lg:sticky lg:top-8 lg:self-start">
             <div className="rounded-2xl bg-gradient-to-br from-brand-700 to-brand-900 p-6 shadow-card">
