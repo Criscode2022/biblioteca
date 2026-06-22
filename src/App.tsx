@@ -1,34 +1,53 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import AuthPanel from "./auth/AuthPanel";
+import { useAuth } from "./auth/AuthContext";
+import {
+  createCloudRepository,
+  createLocalRepository,
+  type BooksRepository,
+} from "./books/repository";
+import { useBooks } from "./books/useBooks";
 import FiltroLibros from "./FiltroLibros";
 import FormularioLibros from "./FormularioLibros";
 import ListaLibros from "./ListaLibros";
 import Modal from "./Modal";
-import type { Book, Filters } from "./types";
-
-const STORAGE_KEY = "books";
-
-const loadBooks = (): Book[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed) ? (parsed as Book[]) : [];
-  } catch {
-    return [];
-  }
-};
+import { cloudConfig, isCloudConfigured } from "./lib/config";
+import type { Filters, NewBook } from "./types";
 
 const EMPTY_FILTERS: Filters = { titulo: "", autor: "", year: null, editorial: "" };
 
+type Mode = "offline" | "cloud";
+const MODE_KEY = "app-mode";
+
+const initialMode = (): Mode => {
+  if (!isCloudConfigured) return "offline";
+  return localStorage.getItem(MODE_KEY) === "cloud" ? "cloud" : "offline";
+};
+
 const App = () => {
-  const [books, setBooks] = useState<Book[]>(loadBooks);
+  const auth = useAuth();
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-  }, [books]);
+  // The local repository is stable for the lifetime of the app.
+  const localRepository = useMemo(() => createLocalRepository(), []);
+
+  const repository = useMemo<BooksRepository | null>(() => {
+    if (mode !== "cloud") return localRepository;
+    if (!auth.user || !cloudConfig.dataApiUrl) return null;
+    return createCloudRepository(cloudConfig.dataApiUrl, auth.user);
+  }, [mode, auth.user, localRepository]);
+
+  const { books, loading, error, addBook, deleteBook, replaceBooks } =
+    useBooks(repository);
+
+  const handleModeChange = (next: Mode) => {
+    setMode(next);
+    localStorage.setItem(MODE_KEY, next);
+  };
 
   const filteredBooks = useMemo(
     () =>
@@ -53,22 +72,9 @@ const App = () => {
     filters.titulo || filters.autor || filters.year || filters.editorial,
   );
 
-  const addBook = (
-    titulo: string,
-    autor: string,
-    year: number,
-    editorial: string,
-    imagen: string,
-  ) => {
-    setBooks((existing) => [
-      ...existing,
-      { id: crypto.randomUUID(), titulo, autor, year, editorial, imagen },
-    ]);
+  const handleAddBook = async (book: NewBook) => {
+    await addBook(book); // throws on failure -> dialog stays open
     setIsFormOpen(false);
-  };
-
-  const deleteBook = (id: string) => {
-    setBooks((existing) => existing.filter((libro) => libro.id !== id));
   };
 
   const exportToExcel = () => {
@@ -96,11 +102,21 @@ const App = () => {
     reader.onload = (e) => {
       try {
         const parsed = JSON.parse(String(e.target?.result)) as unknown;
-        if (Array.isArray(parsed)) {
-          setBooks(parsed as Book[]);
-        } else {
+        if (!Array.isArray(parsed)) {
           alert("El archivo no contiene una lista de libros válida.");
+          return;
         }
+        // Strip ids so each backend assigns its own.
+        const incoming: NewBook[] = parsed.map((b: Record<string, unknown>) => ({
+          titulo: String(b.titulo ?? ""),
+          autor: String(b.autor ?? ""),
+          year: Number(b.year ?? 0),
+          editorial: String(b.editorial ?? ""),
+          imagen: String(b.imagen ?? ""),
+        }));
+        replaceBooks(incoming).catch(() => {
+          /* error surfaced via the hook */
+        });
       } catch {
         alert("No se pudo leer el archivo. Asegúrate de que sea un JSON válido.");
       }
@@ -109,11 +125,26 @@ const App = () => {
     event.target.value = "";
   };
 
+  const signedOutCloud = mode === "cloud" && !auth.user;
+  const showBooks = !signedOutCloud;
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-3 py-6 sm:px-6 sm:py-10">
       <div className="overflow-hidden rounded-3xl bg-white/95 shadow-2xl ring-1 ring-black/5 backdrop-blur">
         {/* Header with background image (kept by request) */}
         <header className="app-header px-6 py-12 text-center sm:px-10 sm:py-16">
+          {auth.cloudAvailable && (
+            <div className="absolute right-3 top-3 flex items-center gap-2 sm:right-5 sm:top-5">
+              <ModeToggle mode={mode} onChange={handleModeChange} />
+              {mode === "cloud" && auth.user && (
+                <AccountChip
+                  email={auth.user.primaryEmail}
+                  onSignOut={() => auth.signOut()}
+                />
+              )}
+            </div>
+          )}
+
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-200">
             Tu colección personal
           </p>
@@ -131,84 +162,160 @@ const App = () => {
 
         {/* Main content */}
         <main className="min-w-0 p-5 sm:p-8">
-          <FiltroLibros filtros={filters} setFiltros={setFilters} />
+          {signedOutCloud ? (
+            auth.loading ? (
+              <Spinner label="Comprobando tu sesión…" />
+            ) : (
+              <AuthPanel />
+            )
+          ) : (
+            <>
+              <FiltroLibros filtros={filters} setFiltros={setFilters} />
 
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            {hasActiveFilters && (
-              <p className="text-sm font-medium text-slate-500">
-                {filteredBooks.length}{" "}
-                {filteredBooks.length === 1 ? "resultado" : "resultados"}
-              </p>
-            )}
-            <div className="flex flex-wrap gap-2 sm:ml-auto">
-              <button
-                className="btn-primary hidden sm:inline-flex"
-                onClick={() => setIsFormOpen(true)}
-              >
-                <PlusIcon className="h-4 w-4" /> Añadir libro
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={exportToExcel}
-                disabled={!books.length}
-              >
-                <DownloadIcon className="h-4 w-4" /> Excel
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={exportToJson}
-                disabled={!books.length}
-              >
-                <DownloadIcon className="h-4 w-4" /> Exportar JSON
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={() => importInputRef.current?.click()}
-              >
-                <UploadIcon className="h-4 w-4" /> Importar JSON
-              </button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept=".json,application/json"
-                onChange={importFromJson}
-                className="hidden"
-              />
-            </div>
-          </div>
+              <div className="mb-5 flex flex-wrap items-center gap-3">
+                {hasActiveFilters && (
+                  <p className="text-sm font-medium text-slate-500">
+                    {filteredBooks.length}{" "}
+                    {filteredBooks.length === 1 ? "resultado" : "resultados"}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2 sm:ml-auto">
+                  <button
+                    className="btn-primary hidden sm:inline-flex"
+                    onClick={() => setIsFormOpen(true)}
+                  >
+                    <PlusIcon className="h-4 w-4" /> Añadir libro
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={exportToExcel}
+                    disabled={!books.length}
+                  >
+                    <DownloadIcon className="h-4 w-4" /> Excel
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={exportToJson}
+                    disabled={!books.length}
+                  >
+                    <DownloadIcon className="h-4 w-4" /> Exportar JSON
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => importInputRef.current?.click()}
+                  >
+                    <UploadIcon className="h-4 w-4" /> Importar JSON
+                  </button>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={importFromJson}
+                    className="hidden"
+                  />
+                </div>
+              </div>
 
-          <ListaLibros
-            libros={filteredBooks}
-            deleteBook={deleteBook}
-            hasActiveFilters={hasActiveFilters}
-          />
+              {error && (
+                <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
+                  {error}
+                </div>
+              )}
+
+              {loading ? (
+                <Spinner label="Cargando tu biblioteca…" />
+              ) : (
+                <ListaLibros
+                  libros={filteredBooks}
+                  deleteBook={deleteBook}
+                  hasActiveFilters={hasActiveFilters}
+                />
+              )}
+            </>
+          )}
         </main>
       </div>
 
       <footer className="mt-6 text-center text-xs text-slate-400">
-        Biblioteca · Hecho con React, TypeScript y Tailwind CSS
+        Biblioteca · {mode === "cloud" ? "Modo nube (Neon)" : "Modo offline"} · React,
+        TypeScript y Tailwind CSS
       </footer>
 
       {/* Add-book dialog */}
-      <Modal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        panelClassName="bg-gradient-to-br from-brand-700 to-brand-900 p-6 sm:p-8"
-      >
-        <FormularioLibros addLibro={addBook} />
-      </Modal>
+      {showBooks && (
+        <Modal
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          panelClassName="bg-gradient-to-br from-brand-700 to-brand-900 p-6 sm:p-8"
+        >
+          <FormularioLibros addLibro={handleAddBook} />
+        </Modal>
+      )}
 
       {/* Mobile floating action button */}
-      <button
-        onClick={() => setIsFormOpen(true)}
-        aria-label="Añadir libro"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-xl shadow-brand-950/40 transition hover:bg-brand-700 active:scale-95 sm:hidden"
-      >
-        <PlusIcon className="h-7 w-7" />
-      </button>
+      {showBooks && (
+        <button
+          onClick={() => setIsFormOpen(true)}
+          aria-label="Añadir libro"
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-xl shadow-brand-950/40 transition hover:bg-brand-700 active:scale-95 sm:hidden"
+        >
+          <PlusIcon className="h-7 w-7" />
+        </button>
+      )}
     </div>
   );
 };
+
+/* ------------------------------------------------------------------ */
+/* Small presentational pieces                                         */
+/* ------------------------------------------------------------------ */
+
+const ModeToggle = ({
+  mode,
+  onChange,
+}: {
+  mode: Mode;
+  onChange: (mode: Mode) => void;
+}) => (
+  <div className="flex rounded-full bg-white/15 p-1 text-xs font-semibold ring-1 ring-white/25 backdrop-blur">
+    {(["offline", "cloud"] as const).map((value) => (
+      <button
+        key={value}
+        onClick={() => onChange(value)}
+        className={`rounded-full px-3 py-1 transition ${
+          mode === value ? "bg-white text-brand-700" : "text-white/90 hover:text-white"
+        }`}
+      >
+        {value === "offline" ? "Offline" : "Nube"}
+      </button>
+    ))}
+  </div>
+);
+
+const AccountChip = ({
+  email,
+  onSignOut,
+}: {
+  email: string | null;
+  onSignOut: () => void;
+}) => (
+  <div className="flex items-center gap-2 rounded-full bg-white/15 py-1 pl-3 pr-1 text-xs font-medium text-white ring-1 ring-white/25 backdrop-blur">
+    <span className="hidden max-w-[10rem] truncate sm:inline">{email ?? "Cuenta"}</span>
+    <button
+      onClick={onSignOut}
+      className="rounded-full bg-white/20 px-2.5 py-1 font-semibold transition hover:bg-white/30"
+    >
+      Salir
+    </button>
+  </div>
+);
+
+const Spinner = ({ label }: { label: string }) => (
+  <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
+    <span className="h-8 w-8 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
+    <p className="text-sm font-medium">{label}</p>
+  </div>
+);
 
 const BookIcon = ({ className }: { className?: string }) => (
   <svg

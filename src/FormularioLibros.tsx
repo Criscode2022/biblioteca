@@ -1,13 +1,9 @@
 import { useState } from "react";
 
+import type { NewBook } from "./types";
+
 interface FormularioLibrosProps {
-  addLibro: (
-    titulo: string,
-    autor: string,
-    year: number,
-    editorial: string,
-    imagen: string,
-  ) => void;
+  addLibro: (book: NewBook) => Promise<void>;
 }
 
 const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
@@ -18,6 +14,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
   const [editorial, setEditorial] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [fileName, setFileName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
     setTitulo("");
@@ -28,7 +25,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
     setFileName("");
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!titulo || !autor || !year || !editorial) {
@@ -43,8 +40,15 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
     }
 
     setErrorMsg("");
-    addLibro(titulo, autor, validYear, editorial, imagen);
-    resetForm();
+    setSubmitting(true);
+    try {
+      await addLibro({ titulo, autor, year: validYear, editorial, imagen });
+      resetForm();
+    } catch {
+      setErrorMsg("No se pudo guardar el libro. Inténtalo de nuevo.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,8 +165,12 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
         </div>
       )}
 
-      <button type="submit" className="btn bg-white text-brand-800 shadow-lg hover:bg-brand-50">
-        Añadir libro
+      <button
+        type="submit"
+        disabled={submitting}
+        className="btn bg-white text-brand-800 shadow-lg hover:bg-brand-50"
+      >
+        {submitting ? "Guardando…" : "Añadir libro"}
       </button>
     </form>
   );
