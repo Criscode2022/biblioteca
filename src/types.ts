@@ -1,0 +1,15 @@
+export interface Book {
+  id: string;
+  titulo: string;
+  autor: string;
+  year: number;
+  editorial: string;
+  imagen: string;
+}
+
+export interface Filters {
+  titulo: string;
+  autor: string;
+  year: number | null;
+  editorial: string;
+}
