@@ -5,7 +5,4 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   base: process.env.NODE_ENV === "production" ? "/biblioteca/" : "/",
-  optimizeDeps: {
-    exclude: ['react-router-dom'], // Exclude react-router-dom from optimization
-  }
 });
