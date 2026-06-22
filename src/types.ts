@@ -7,6 +7,9 @@ export interface Book {
   imagen: string;
 }
 
+/** A book that has not been persisted yet (no id). */
+export type NewBook = Omit<Book, "id">;
+
 export interface Filters {
   titulo: string;
   autor: string;
