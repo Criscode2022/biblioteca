@@ -49,6 +49,10 @@ const App = () => {
     [books, filters],
   );
 
+  const hasActiveFilters = Boolean(
+    filters.titulo || filters.autor || filters.year || filters.editorial,
+  );
+
   const addBook = (
     titulo: string,
     autor: string,
@@ -129,12 +133,14 @@ const App = () => {
         <main className="min-w-0 p-5 sm:p-8">
           <FiltroLibros filtros={filters} setFiltros={setFilters} />
 
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-medium text-slate-500">
-              {filteredBooks.length}{" "}
-              {filteredBooks.length === 1 ? "resultado" : "resultados"}
-            </p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            {hasActiveFilters && (
+              <p className="text-sm font-medium text-slate-500">
+                {filteredBooks.length}{" "}
+                {filteredBooks.length === 1 ? "resultado" : "resultados"}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2 sm:ml-auto">
               <button
                 className="btn-primary hidden sm:inline-flex"
                 onClick={() => setIsFormOpen(true)}
@@ -171,7 +177,11 @@ const App = () => {
             </div>
           </div>
 
-          <ListaLibros libros={filteredBooks} deleteBook={deleteBook} />
+          <ListaLibros
+            libros={filteredBooks}
+            deleteBook={deleteBook}
+            hasActiveFilters={hasActiveFilters}
+          />
         </main>
       </div>
 
