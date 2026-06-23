@@ -1,21 +1,21 @@
 import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import AuthPanel from "./auth/AuthPanel";
 import { useAuth } from "./auth/AuthContext";
+import AuthPanel from "./auth/AuthPanel";
+import { restoreLocalSnapshot, writeLocalBooks } from "./books/localStorage";
 import {
   createCloudRepository,
   createLocalRepository,
   type BooksRepository,
 } from "./books/repository";
-import { restoreLocalSnapshot, writeLocalBooks } from "./books/localStorage";
 import { useBooks } from "./books/useBooks";
 import { ChoiceDialog } from "./ConfirmDialog";
 import FiltroLibros from "./FiltroLibros";
 import FormularioLibros from "./FormularioLibros";
-import ListaLibros from "./ListaLibros";
-import Modal from "./Modal";
 import { isCloudConfigured } from "./lib/config";
 import { neonClient } from "./lib/neon";
+import ListaLibros from "./ListaLibros";
+import Modal from "./Modal";
 import type { Filters, NewBook } from "./types";
 
 const EMPTY_FILTERS: Filters = {
@@ -109,7 +109,9 @@ const App = () => {
             : true) &&
           (filters.year ? Number(libro.year) === Number(filters.year) : true) &&
           (filters.editorial
-            ? libro.editorial.toLowerCase().includes(filters.editorial.toLowerCase())
+            ? libro.editorial
+                .toLowerCase()
+                .includes(filters.editorial.toLowerCase())
             : true)
         );
       }),
@@ -118,10 +120,10 @@ const App = () => {
 
   const hasActiveFilters = Boolean(
     filters.query.trim() ||
-      filters.titulo ||
-      filters.autor ||
-      filters.year ||
-      filters.editorial,
+    filters.titulo ||
+    filters.autor ||
+    filters.year ||
+    filters.editorial,
   );
 
   const handleAddBook = async (book: NewBook) => {
@@ -130,7 +132,9 @@ const App = () => {
   };
 
   const exportToExcel = () => {
-    const formattedData = books.map(({ id: _id, imagen: _imagen, ...rest }) => rest);
+    const formattedData = books.map(
+      ({ id: _id, imagen: _imagen, ...rest }) => rest,
+    );
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Libros");
@@ -236,8 +240,8 @@ const App = () => {
       </div>
 
       <footer className="mt-3 text-center text-[10px] text-slate-400 sm:mt-6 sm:text-xs">
-        Biblioteca · {mode === "cloud" ? "Modo nube (Neon)" : "Modo offline"} · React,
-        TypeScript y Tailwind CSS
+        Biblioteca · {mode === "cloud" ? "Modo nube (Neon)" : "Modo offline"} ·
+        React, TypeScript y Tailwind CSS
       </footer>
 
       {/* Add-book dialog */}
@@ -255,7 +259,7 @@ const App = () => {
         isOpen={logoutDialogOpen}
         title="¿Qué hacer con tus libros locales?"
         message="Al cerrar sesión puedes guardar los libros de tu cuenta en este dispositivo o recuperar la biblioteca local que tenías antes de conectarte."
-        primaryLabel="Guardar libros de la cuenta"
+        primaryLabel="Guardar libros de la cuenta online"
         secondaryLabel="Recuperar biblioteca local anterior"
         onPrimary={() => void handleSignOutChoice(true)}
         onSecondary={() => void handleSignOutChoice(false)}
@@ -294,7 +298,9 @@ const ModeToggle = ({
         key={value}
         onClick={() => onChange(value)}
         className={`rounded-full px-2 py-0.5 transition sm:px-3 sm:py-1 ${
-          mode === value ? "bg-white text-brand-700" : "text-white/90 hover:text-white"
+          mode === value
+            ? "bg-white text-brand-700"
+            : "text-white/90 hover:text-white"
         }`}
       >
         {value === "offline" ? "Offline" : "Nube"}
@@ -311,7 +317,9 @@ const AccountChip = ({
   onSignOut: () => void;
 }) => (
   <div className="flex items-center gap-1 rounded-full bg-white/15 py-0.5 pl-2 pr-0.5 text-[10px] font-medium text-white ring-1 ring-white/25 backdrop-blur sm:gap-2 sm:py-1 sm:pl-3 sm:pr-1 sm:text-xs">
-    <span className="hidden max-w-[10rem] truncate sm:inline">{email ?? "Cuenta"}</span>
+    <span className="hidden max-w-[10rem] truncate sm:inline">
+      {email ?? "Cuenta"}
+    </span>
     <button
       onClick={onSignOut}
       className="rounded-full bg-white/20 px-2 py-0.5 font-semibold transition hover:bg-white/30 sm:px-2.5 sm:py-1"
