@@ -18,7 +18,13 @@ import { isCloudConfigured } from "./lib/config";
 import { neonClient } from "./lib/neon";
 import type { Filters, NewBook } from "./types";
 
-const EMPTY_FILTERS: Filters = { titulo: "", autor: "", year: null, editorial: "" };
+const EMPTY_FILTERS: Filters = {
+  query: "",
+  titulo: "",
+  autor: "",
+  year: null,
+  editorial: "",
+};
 
 type Mode = "offline" | "cloud";
 const MODE_KEY = "app-mode";
@@ -85,7 +91,16 @@ const App = () => {
   const filteredBooks = useMemo(
     () =>
       books.filter((libro) => {
+        const query = filters.query.trim().toLowerCase();
+        const matchesQuery =
+          !query ||
+          libro.titulo.toLowerCase().includes(query) ||
+          libro.autor.toLowerCase().includes(query) ||
+          libro.editorial.toLowerCase().includes(query) ||
+          String(libro.year).includes(query);
+
         return (
+          matchesQuery &&
           (filters.titulo
             ? libro.titulo.toLowerCase().includes(filters.titulo.toLowerCase())
             : true) &&
@@ -102,7 +117,11 @@ const App = () => {
   );
 
   const hasActiveFilters = Boolean(
-    filters.titulo || filters.autor || filters.year || filters.editorial,
+    filters.query.trim() ||
+      filters.titulo ||
+      filters.autor ||
+      filters.year ||
+      filters.editorial,
   );
 
   const handleAddBook = async (book: NewBook) => {
@@ -122,12 +141,12 @@ const App = () => {
   const showBooks = !signedOutCloud;
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-3 py-6 sm:px-6 sm:py-10">
-      <div className="overflow-hidden rounded-3xl bg-white/95 shadow-2xl ring-1 ring-black/5 backdrop-blur">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-2 py-3 sm:px-6 sm:py-10">
+      <div className="overflow-hidden rounded-2xl bg-white/95 shadow-2xl ring-1 ring-black/5 backdrop-blur sm:rounded-3xl">
         {/* Header with background image (kept by request) */}
-        <header className="app-header px-6 py-12 text-center sm:px-10 sm:py-16">
+        <header className="app-header px-4 py-8 text-center sm:px-10 sm:py-16">
           {auth.cloudAvailable && (
-            <div className="absolute right-3 top-3 flex items-center gap-2 sm:right-5 sm:top-5">
+            <div className="absolute right-2 top-2 flex items-center gap-1.5 sm:right-5 sm:top-5 sm:gap-2">
               <ModeToggle mode={mode} onChange={handleModeChange} />
               {mode === "cloud" && auth.user && (
                 <AccountChip
@@ -138,23 +157,23 @@ const App = () => {
             </div>
           )}
 
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-200">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-brand-200 sm:mb-2 sm:text-xs sm:tracking-[0.35em]">
             Tu colección personal
           </p>
-          <h1 className="app-header-title font-serif text-5xl font-bold tracking-tight text-white sm:text-7xl">
+          <h1 className="app-header-title font-serif text-4xl font-bold tracking-tight text-white sm:text-7xl">
             Biblioteca
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-sm text-slate-200 sm:text-base">
+          <p className="mx-auto mt-2 max-w-md text-xs text-slate-200 sm:mt-4 sm:text-base">
             Organiza, busca y exporta todos tus libros en un solo lugar.
           </p>
-          <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium text-white ring-1 ring-white/25 backdrop-blur">
-            <BookIcon className="h-4 w-4" />
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white ring-1 ring-white/25 backdrop-blur sm:mt-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm">
+            <BookIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             {books.length} {books.length === 1 ? "libro" : "libros"}
           </span>
         </header>
 
         {/* Main content */}
-        <main className="min-w-0 p-5 sm:p-8">
+        <main className="min-w-0 p-3 sm:p-8">
           {signedOutCloud ? (
             auth.loading ? (
               <Spinner label="Comprobando tu sesión…" />
@@ -168,14 +187,14 @@ const App = () => {
             <>
               <FiltroLibros filtros={filters} setFiltros={setFilters} />
 
-              <div className="mb-5 flex flex-wrap items-center gap-3">
+              <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-5 sm:gap-3">
                 {hasActiveFilters && (
-                  <p className="text-sm font-medium text-slate-500">
+                  <p className="text-xs font-medium text-slate-500 sm:text-sm">
                     {filteredBooks.length}{" "}
                     {filteredBooks.length === 1 ? "resultado" : "resultados"}
                   </p>
                 )}
-                <div className="flex flex-wrap gap-2 sm:ml-auto">
+                <div className="ml-auto flex flex-wrap gap-2">
                   <button
                     className="btn-primary hidden sm:inline-flex"
                     onClick={() => setIsFormOpen(true)}
@@ -183,17 +202,21 @@ const App = () => {
                     <PlusIcon className="h-4 w-4" /> Añadir libro
                   </button>
                   <button
-                    className="btn-secondary"
+                    type="button"
+                    className="btn-secondary px-2.5 sm:px-4"
                     onClick={exportToExcel}
                     disabled={!books.length}
+                    aria-label="Exportar a Excel"
+                    title="Exportar a Excel"
                   >
-                    <DownloadIcon className="h-4 w-4" /> Excel
+                    <DownloadIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Excel</span>
                   </button>
                 </div>
               </div>
 
               {error && (
-                <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
+                <div className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 ring-1 ring-rose-200 sm:mb-4 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm">
                   {error}
                 </div>
               )}
@@ -212,7 +235,7 @@ const App = () => {
         </main>
       </div>
 
-      <footer className="mt-6 text-center text-xs text-slate-400">
+      <footer className="mt-3 text-center text-[10px] text-slate-400 sm:mt-6 sm:text-xs">
         Biblioteca · {mode === "cloud" ? "Modo nube (Neon)" : "Modo offline"} · React,
         TypeScript y Tailwind CSS
       </footer>
@@ -245,9 +268,9 @@ const App = () => {
         <button
           onClick={() => setIsFormOpen(true)}
           aria-label="Añadir libro"
-          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-xl shadow-brand-950/40 transition hover:bg-brand-700 active:scale-95 sm:hidden"
+          className="fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-xl shadow-brand-950/40 transition hover:bg-brand-700 active:scale-95 sm:hidden"
         >
-          <PlusIcon className="h-7 w-7" />
+          <PlusIcon className="h-6 w-6" />
         </button>
       )}
     </div>
@@ -265,12 +288,12 @@ const ModeToggle = ({
   mode: Mode;
   onChange: (mode: Mode) => void;
 }) => (
-  <div className="flex rounded-full bg-white/15 p-1 text-xs font-semibold ring-1 ring-white/25 backdrop-blur">
+  <div className="flex rounded-full bg-white/15 p-0.5 text-[10px] font-semibold ring-1 ring-white/25 backdrop-blur sm:p-1 sm:text-xs">
     {(["offline", "cloud"] as const).map((value) => (
       <button
         key={value}
         onClick={() => onChange(value)}
-        className={`rounded-full px-3 py-1 transition ${
+        className={`rounded-full px-2 py-0.5 transition sm:px-3 sm:py-1 ${
           mode === value ? "bg-white text-brand-700" : "text-white/90 hover:text-white"
         }`}
       >
@@ -287,11 +310,11 @@ const AccountChip = ({
   email: string | null;
   onSignOut: () => void;
 }) => (
-  <div className="flex items-center gap-2 rounded-full bg-white/15 py-1 pl-3 pr-1 text-xs font-medium text-white ring-1 ring-white/25 backdrop-blur">
+  <div className="flex items-center gap-1 rounded-full bg-white/15 py-0.5 pl-2 pr-0.5 text-[10px] font-medium text-white ring-1 ring-white/25 backdrop-blur sm:gap-2 sm:py-1 sm:pl-3 sm:pr-1 sm:text-xs">
     <span className="hidden max-w-[10rem] truncate sm:inline">{email ?? "Cuenta"}</span>
     <button
       onClick={onSignOut}
-      className="rounded-full bg-white/20 px-2.5 py-1 font-semibold transition hover:bg-white/30"
+      className="rounded-full bg-white/20 px-2 py-0.5 font-semibold transition hover:bg-white/30 sm:px-2.5 sm:py-1"
     >
       Salir
     </button>
@@ -299,9 +322,9 @@ const AccountChip = ({
 );
 
 const Spinner = ({ label }: { label: string }) => (
-  <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
-    <span className="h-8 w-8 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
-    <p className="text-sm font-medium">{label}</p>
+  <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-500 sm:gap-3 sm:py-16">
+    <span className="h-6 w-6 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600 sm:h-8 sm:w-8" />
+    <p className="text-xs font-medium sm:text-sm">{label}</p>
   </div>
 );
 

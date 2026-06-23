@@ -11,7 +11,7 @@ const Libro = ({ libro, deleteBook }: LibroProps) => {
     `https://placehold.co/700x800/4338ca/ffffff?text=${encodeURIComponent(libro.titulo)}`;
 
   return (
-    <article className="group flex animate-fade-in-up flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-card-hover">
+    <article className="group flex animate-fade-in-up flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-card-hover sm:rounded-2xl">
       <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
         <img
           src={coverSrc}
@@ -19,26 +19,28 @@ const Libro = ({ libro, deleteBook }: LibroProps) => {
           loading="lazy"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
-        <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
+        <span className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur sm:right-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
           {libro.year}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-serif text-lg font-bold leading-tight text-slate-900">
+      <div className="flex flex-1 flex-col p-2.5 sm:p-4">
+        <h3 className="line-clamp-2 font-serif text-sm font-bold leading-snug text-slate-900 sm:text-lg sm:leading-tight">
           {libro.titulo}
         </h3>
-        <p className="mt-1 text-sm font-medium text-brand-600">{libro.autor}</p>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-0.5 truncate text-xs font-medium text-brand-600 sm:mt-1 sm:text-sm">
+          {libro.autor}
+        </p>
+        <p className="mt-1 truncate text-[10px] text-slate-500 sm:mt-2 sm:text-xs">
           <span className="font-semibold text-slate-600">Editorial:</span>{" "}
           {libro.editorial}
         </p>
 
         <button
           onClick={() => deleteBook(libro.id)}
-          className="btn-danger mt-4 w-full"
+          className="btn-danger mt-2 w-full sm:mt-4"
         >
-          <TrashIcon className="h-4 w-4" />
+          <TrashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           Eliminar
         </button>
       </div>

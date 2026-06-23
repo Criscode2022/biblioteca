@@ -10,11 +10,11 @@ interface ListaLibrosProps {
 const ListaLibros = ({ libros, deleteBook, hasActiveFilters }: ListaLibrosProps) => {
   if (libros.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-16 text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-500">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/60 px-4 py-10 text-center sm:rounded-2xl sm:px-6 sm:py-16">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-500 sm:mb-4 sm:h-16 sm:w-16">
           {hasActiveFilters ? (
             <svg
-              className="h-8 w-8"
+              className="h-6 w-6 sm:h-8 sm:w-8"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -28,7 +28,7 @@ const ListaLibros = ({ libros, deleteBook, hasActiveFilters }: ListaLibrosProps)
             </svg>
           ) : (
             <svg
-              className="h-8 w-8"
+              className="h-6 w-6 sm:h-8 sm:w-8"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -44,18 +44,18 @@ const ListaLibros = ({ libros, deleteBook, hasActiveFilters }: ListaLibrosProps)
         </div>
         {hasActiveFilters ? (
           <>
-            <h3 className="text-lg font-semibold text-slate-700">Sin resultados</h3>
-            <p className="mt-1 max-w-xs text-sm text-slate-500">
+            <h3 className="text-base font-semibold text-slate-700 sm:text-lg">Sin resultados</h3>
+            <p className="mt-1 max-w-xs text-xs text-slate-500 sm:text-sm">
               Ningún libro coincide con tu búsqueda. Prueba a ajustar o limpiar los
               filtros.
             </p>
           </>
         ) : (
           <>
-            <h3 className="text-lg font-semibold text-slate-700">
+            <h3 className="text-base font-semibold text-slate-700 sm:text-lg">
               Tu biblioteca está vacía
             </h3>
-            <p className="mt-1 max-w-xs text-sm text-slate-500">
+            <p className="mt-1 max-w-xs text-xs text-slate-500 sm:text-sm">
               Añade tu primer libro con el botón «Añadir libro».
             </p>
           </>
@@ -65,7 +65,7 @@ const ListaLibros = ({ libros, deleteBook, hasActiveFilters }: ListaLibrosProps)
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4 2xl:grid-cols-5">
       {libros.map((libro) => (
         <Libro key={libro.id} libro={libro} deleteBook={deleteBook} />
       ))}

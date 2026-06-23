@@ -11,6 +11,8 @@ export interface Book {
 export type NewBook = Omit<Book, "id">;
 
 export interface Filters {
+  /** Quick search across title, author, publisher, and year. */
+  query: string;
   titulo: string;
   autor: string;
   year: number | null;
