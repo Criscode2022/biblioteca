@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import AuthPanel from "./auth/AuthPanel";
 import { useAuth } from "./auth/AuthContext";
@@ -35,7 +35,6 @@ const App = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
-  const importInputRef = useRef<HTMLInputElement>(null);
 
   // The local repository is stable for the lifetime of the app.
   const localRepository = useMemo(() => createLocalRepository(), []);
@@ -46,8 +45,7 @@ const App = () => {
     return createCloudRepository(neonClient);
   }, [mode, auth.user, localRepository]);
 
-  const { books, loading, error, addBook, deleteBook, replaceBooks } =
-    useBooks(repository);
+  const { books, loading, error, addBook, deleteBook } = useBooks(repository);
 
   const handleModeChange = (next: Mode) => {
     setMode(next);
@@ -118,46 +116,6 @@ const App = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Libros");
     XLSX.writeFile(workbook, "libros.xlsx");
-  };
-
-  const exportToJson = () => {
-    const data = JSON.stringify(books, null, 2);
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(data)}`;
-    const link = document.createElement("a");
-    link.href = dataUri;
-    link.download = "books.json";
-    link.click();
-  };
-
-  const importFromJson = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const parsed = JSON.parse(String(e.target?.result)) as unknown;
-        if (!Array.isArray(parsed)) {
-          alert("El archivo no contiene una lista de libros válida.");
-          return;
-        }
-        // Strip ids so each backend assigns its own.
-        const incoming: NewBook[] = parsed.map((b: Record<string, unknown>) => ({
-          titulo: String(b.titulo ?? ""),
-          autor: String(b.autor ?? ""),
-          year: Number(b.year ?? 0),
-          editorial: String(b.editorial ?? ""),
-          imagen: String(b.imagen ?? ""),
-        }));
-        replaceBooks(incoming).catch(() => {
-          /* error surfaced via the hook */
-        });
-      } catch {
-        alert("No se pudo leer el archivo. Asegúrate de que sea un JSON válido.");
-      }
-    };
-    reader.readAsText(file, "UTF-8");
-    event.target.value = "";
   };
 
   const signedOutCloud = mode === "cloud" && !auth.user;
@@ -231,26 +189,6 @@ const App = () => {
                   >
                     <DownloadIcon className="h-4 w-4" /> Excel
                   </button>
-                  <button
-                    className="btn-secondary"
-                    onClick={exportToJson}
-                    disabled={!books.length}
-                  >
-                    <DownloadIcon className="h-4 w-4" /> Exportar JSON
-                  </button>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => importInputRef.current?.click()}
-                  >
-                    <UploadIcon className="h-4 w-4" /> Importar JSON
-                  </button>
-                  <input
-                    ref={importInputRef}
-                    type="file"
-                    accept=".json,application/json"
-                    onChange={importFromJson}
-                    className="hidden"
-                  />
                 </div>
               </div>
 
@@ -413,23 +351,6 @@ const DownloadIcon = ({ className }: { className?: string }) => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
     <polyline points="7 10 12 15 17 10" />
     <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
-
-const UploadIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="17 8 12 3 7 8" />
-    <line x1="12" y1="3" x2="12" y2="15" />
   </svg>
 );
 
