@@ -11,8 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@stackframe/react": "^2.8.108",
-    "@supabase/postgrest-js": "^2.108.2",
+    "@neondatabase/neon-js": "^0.6.2-beta",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "xlsx": "^0.18.5"

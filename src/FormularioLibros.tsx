@@ -66,8 +66,12 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <h2 className="font-serif text-2xl font-bold text-white">Añadir libro</h2>
-        <p className="mt-1 text-sm text-brand-200">Completa los datos del ejemplar.</p>
+        <h2 className="font-serif text-2xl font-bold text-white">
+          Añadir libro
+        </h2>
+        <p className="mt-1 text-sm text-brand-200">
+          Completa los datos del ejemplar.
+        </p>
       </div>
 
       <div>
@@ -127,7 +131,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
           <input
             id="editorial"
             type="text"
-            placeholder="Sudamericana"
+            placeholder="América"
             value={editorial}
             onChange={(e) => setEditorial(e.target.value)}
             className="field"

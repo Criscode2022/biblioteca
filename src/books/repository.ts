@@ -1,5 +1,6 @@
-import { PostgrestClient } from "@supabase/postgrest-js";
+import type { NeonBooksClient } from "../lib/neon";
 import type { Book, NewBook } from "../types";
+import { readLocalBooks, writeLocalBooks } from "./localStorage";
 
 /**
  * Storage abstraction shared by both modes. The UI only ever talks to this
@@ -13,57 +14,37 @@ export interface BooksRepository {
   replaceAll(books: NewBook[]): Promise<Book[]>;
 }
 
-const STORAGE_KEY = "books";
-
 /* ------------------------------------------------------------------ */
 /* Offline repository (localStorage)                                   */
 /* ------------------------------------------------------------------ */
 
 export function createLocalRepository(): BooksRepository {
-  const read = (): Book[] => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-      return Array.isArray(parsed) ? (parsed as Book[]) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const write = (books: Book[]) =>
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-
   return {
     async list() {
-      return read();
+      return readLocalBooks();
     },
     async add(book) {
       const created: Book = { id: crypto.randomUUID(), ...book };
-      write([...read(), created]);
+      writeLocalBooks([...readLocalBooks(), created]);
       return created;
     },
     async remove(id) {
-      write(read().filter((book) => book.id !== id));
+      writeLocalBooks(readLocalBooks().filter((book) => book.id !== id));
     },
     async replaceAll(books) {
       const withIds: Book[] = books.map((book) => ({
         id: crypto.randomUUID(),
         ...book,
       }));
-      write(withIds);
+      writeLocalBooks(withIds);
       return withIds;
     },
   };
 }
 
 /* ------------------------------------------------------------------ */
-/* Cloud repository (Neon Data API / PostgREST)                        */
+/* Cloud repository (Neon Data API)                                    */
 /* ------------------------------------------------------------------ */
-
-/** Minimal shape we need from a Neon Auth (Stack) user. */
-export interface TokenProvider {
-  getAuthJson(): Promise<{ accessToken: string | null }>;
-}
 
 interface BookRow {
   id: string;
@@ -85,21 +66,7 @@ const mapRow = (row: BookRow): Book => ({
   imagen: row.imagen ?? "",
 });
 
-export function createCloudRepository(
-  dataApiUrl: string,
-  user: TokenProvider,
-): BooksRepository {
-  // Every request is authenticated with the user's Neon Auth access token, so
-  // the Data API's Row-Level Security only ever returns/operates on their rows.
-  const client = new PostgrestClient(dataApiUrl, {
-    fetch: async (input: RequestInfo | URL, init: RequestInit = {}) => {
-      const { accessToken } = await user.getAuthJson();
-      const headers = new Headers(init.headers);
-      if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-      return fetch(input, { ...init, headers });
-    },
-  });
-
+export function createCloudRepository(client: NeonBooksClient): BooksRepository {
   const table = () => client.from("books");
 
   return {
@@ -123,7 +90,6 @@ export function createCloudRepository(
       if (error) throw new Error(error.message);
     },
     async replaceAll(books) {
-      // Clear existing rows (RLS scopes this to the current user) then insert.
       const cleared = await table().delete().not("id", "is", null);
       if (cleared.error) throw new Error(cleared.error.message);
       if (books.length === 0) return [];

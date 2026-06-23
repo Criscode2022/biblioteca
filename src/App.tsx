@@ -7,12 +7,15 @@ import {
   createLocalRepository,
   type BooksRepository,
 } from "./books/repository";
+import { restoreLocalSnapshot, writeLocalBooks } from "./books/localStorage";
 import { useBooks } from "./books/useBooks";
+import { ChoiceDialog } from "./ConfirmDialog";
 import FiltroLibros from "./FiltroLibros";
 import FormularioLibros from "./FormularioLibros";
 import ListaLibros from "./ListaLibros";
 import Modal from "./Modal";
-import { cloudConfig, isCloudConfigured } from "./lib/config";
+import { isCloudConfigured } from "./lib/config";
+import { neonClient } from "./lib/neon";
 import type { Filters, NewBook } from "./types";
 
 const EMPTY_FILTERS: Filters = { titulo: "", autor: "", year: null, editorial: "" };
@@ -30,6 +33,8 @@ const App = () => {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   // The local repository is stable for the lifetime of the app.
@@ -37,8 +42,8 @@ const App = () => {
 
   const repository = useMemo<BooksRepository | null>(() => {
     if (mode !== "cloud") return localRepository;
-    if (!auth.user || !cloudConfig.dataApiUrl) return null;
-    return createCloudRepository(cloudConfig.dataApiUrl, auth.user);
+    if (!auth.user || !neonClient) return null;
+    return createCloudRepository(neonClient);
   }, [mode, auth.user, localRepository]);
 
   const { books, loading, error, addBook, deleteBook, replaceBooks } =
@@ -47,6 +52,36 @@ const App = () => {
   const handleModeChange = (next: Mode) => {
     setMode(next);
     localStorage.setItem(MODE_KEY, next);
+  };
+
+  const syncLocalFromCloud = async () => {
+    if (!neonClient) return;
+    const cloudBooks = await createCloudRepository(neonClient).list();
+    writeLocalBooks(cloudBooks);
+  };
+
+  const uploadLocalBooksToCloud = async (books: NewBook[]) => {
+    if (!neonClient) return;
+    const cloudRepo = createCloudRepository(neonClient);
+    const uploaded = await cloudRepo.replaceAll(books);
+    writeLocalBooks(uploaded);
+  };
+
+  const handleSignOutChoice = async (keepCloudBooks: boolean) => {
+    setLogoutBusy(true);
+    try {
+      if (keepCloudBooks) {
+        await syncLocalFromCloud();
+      } else {
+        restoreLocalSnapshot();
+      }
+      await auth.signOut();
+      setLogoutDialogOpen(false);
+    } catch {
+      /* keep dialog open so the user can retry */
+    } finally {
+      setLogoutBusy(false);
+    }
   };
 
   const filteredBooks = useMemo(
@@ -139,7 +174,7 @@ const App = () => {
               {mode === "cloud" && auth.user && (
                 <AccountChip
                   email={auth.user.primaryEmail}
-                  onSignOut={() => auth.signOut()}
+                  onSignOut={() => setLogoutDialogOpen(true)}
                 />
               )}
             </div>
@@ -166,7 +201,10 @@ const App = () => {
             auth.loading ? (
               <Spinner label="Comprobando tu sesión…" />
             ) : (
-              <AuthPanel />
+              <AuthPanel
+                onSignInSuccess={syncLocalFromCloud}
+                onSignUpWithLocalBooks={uploadLocalBooksToCloud}
+              />
             )
           ) : (
             <>
@@ -251,6 +289,18 @@ const App = () => {
           <FormularioLibros addLibro={handleAddBook} />
         </Modal>
       )}
+
+      <ChoiceDialog
+        isOpen={logoutDialogOpen}
+        title="¿Qué hacer con tus libros locales?"
+        message="Al cerrar sesión puedes guardar los libros de tu cuenta en este dispositivo o recuperar la biblioteca local que tenías antes de conectarte."
+        primaryLabel="Guardar libros de la cuenta"
+        secondaryLabel="Recuperar biblioteca local anterior"
+        onPrimary={() => void handleSignOutChoice(true)}
+        onSecondary={() => void handleSignOutChoice(false)}
+        onCancel={() => setLogoutDialogOpen(false)}
+        busy={logoutBusy}
+      />
 
       {/* Mobile floating action button */}
       {showBooks && (

@@ -3,7 +3,6 @@ import { createContext, useContext } from "react";
 export interface AuthUser {
   id: string;
   primaryEmail: string | null;
-  getAuthJson(): Promise<{ accessToken: string | null }>;
   signOut(): Promise<void>;
 }
 

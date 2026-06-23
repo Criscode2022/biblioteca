@@ -1,47 +1,54 @@
 import { useMemo } from "react";
-import { useUser } from "@stackframe/react";
-import { stackClientApp } from "../lib/stack";
+import { neonClient } from "../lib/neon";
 import { AuthContext, type AuthResult, type AuthState, type AuthUser } from "./AuthContext";
 
-const toResult = (res: { status: string; error?: unknown }): AuthResult => {
-  if (res.status === "error") {
-    const error = res.error as { message?: string } | undefined;
-    return { ok: false, error: error?.message ?? "No se pudo completar la acción." };
-  }
+const toResult = (error: { message?: string } | null | undefined): AuthResult => {
+  if (error) return { ok: false, error: error.message ?? "No se pudo completar la acción." };
   return { ok: true };
 };
 
 /**
- * Provided only when cloud mode is configured (mounted inside StackProvider).
- * Bridges Neon Auth's hooks into our app-wide AuthState.
+ * Provided only when cloud mode is configured. Bridges Neon Auth hooks into our
+ * app-wide AuthState.
  */
 export const CloudAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  // `useUser` returns `undefined` while loading, `null` when signed out.
-  const user = useUser();
+  const client = neonClient;
+  if (!client) throw new Error("CloudAuthProvider requires a configured Neon client.");
 
-  const value = useMemo<AuthState>(
-    () => ({
+  const session = client.auth.useSession();
+
+  const value = useMemo<AuthState>(() => {
+    const user: AuthUser | null = session.data?.user
+      ? {
+          id: session.data.user.id,
+          primaryEmail: session.data.user.email ?? null,
+          async signOut() {
+            await client.auth.signOut();
+          },
+        }
+      : null;
+
+    return {
       cloudAvailable: true,
-      loading: user === undefined,
-      user: (user as AuthUser | null) ?? null,
+      loading: session.isPending,
+      user,
       async signIn(email, password) {
-        if (!stackClientApp) return { ok: false, error: "Cliente no inicializado." };
-        return toResult(
-          await stackClientApp.signInWithCredential({ email, password, noRedirect: true }),
-        );
+        const result = await client.auth.signIn.email({ email, password });
+        return toResult(result.error);
       },
       async signUp(email, password) {
-        if (!stackClientApp) return { ok: false, error: "Cliente no inicializado." };
-        return toResult(
-          await stackClientApp.signUpWithCredential({ email, password, noRedirect: true }),
-        );
+        const result = await client.auth.signUp.email({
+          email,
+          password,
+          name: email.split("@")[0] || "Usuario",
+        });
+        return toResult(result.error);
       },
       async signOut() {
-        await user?.signOut();
+        await client.auth.signOut();
       },
-    }),
-    [user],
-  );
+    };
+  }, [client, session.data?.user, session.isPending]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
