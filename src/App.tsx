@@ -183,7 +183,7 @@ const App = () => {
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-200">
             Tu colección personal
           </p>
-          <h1 className="font-serif text-5xl font-extrabold tracking-tight text-white drop-shadow sm:text-7xl">
+          <h1 className="app-header-title font-serif text-5xl font-bold tracking-tight text-white sm:text-7xl">
             Biblioteca
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm text-slate-200 sm:text-base">
