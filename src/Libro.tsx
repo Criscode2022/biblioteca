@@ -1,11 +1,16 @@
+import { SparklesIcon } from "./ai/BookAnalysisModal";
+import { useI18n } from "./i18n/I18nContext";
 import type { Book } from "./types";
 
 interface LibroProps {
   libro: Book;
   deleteBook: (id: string) => void;
+  /** Present only when AI is available (cloud mode, signed in). */
+  onAnalyze?: (libro: Book) => void;
 }
 
-const Libro = ({ libro, deleteBook }: LibroProps) => {
+const Libro = ({ libro, deleteBook, onAnalyze }: LibroProps) => {
+  const { t } = useI18n();
   const coverSrc =
     libro.imagen ||
     `https://placehold.co/700x800/4338ca/ffffff?text=${encodeURIComponent(libro.titulo)}`;
@@ -15,7 +20,7 @@ const Libro = ({ libro, deleteBook }: LibroProps) => {
       <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
         <img
           src={coverSrc}
-          alt={`Carátula de ${libro.titulo}`}
+          alt={t("book.coverAlt", { titulo: libro.titulo })}
           loading="lazy"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
@@ -30,17 +35,25 @@ const Libro = ({ libro, deleteBook }: LibroProps) => {
         </h3>
         <p className="mt-1 text-sm font-medium text-brand-600">{libro.autor}</p>
         <p className="mt-2 text-xs text-slate-500">
-          <span className="font-semibold text-slate-600">Editorial:</span>{" "}
+          <span className="font-semibold text-slate-600">{t("book.publisher")}:</span>{" "}
           {libro.editorial}
         </p>
 
-        <button
-          onClick={() => deleteBook(libro.id)}
-          className="btn-danger mt-4 w-full"
-        >
-          <TrashIcon className="h-4 w-4" />
-          Eliminar
-        </button>
+        <div className="mt-4 flex gap-2">
+          {onAnalyze && (
+            <button
+              onClick={() => onAnalyze(libro)}
+              className="btn flex-1 bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white"
+            >
+              <SparklesIcon className="h-4 w-4" />
+              {t("book.analyze")}
+            </button>
+          )}
+          <button onClick={() => deleteBook(libro.id)} className="btn-danger flex-1">
+            <TrashIcon className="h-4 w-4" />
+            {t("book.delete")}
+          </button>
+        </div>
       </div>
     </article>
   );

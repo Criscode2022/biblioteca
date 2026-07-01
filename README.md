@@ -1,104 +1,119 @@
-# Biblioteca
+# Biblioteca Cloud
 
-Una app para organizar, buscar y exportar tu colección de libros. Construida con
-**React + TypeScript + Vite + Tailwind CSS**.
+**La plataforma inteligente para bibliotecas.** Cataloga, busca y analiza
+colecciones de libros con inteligencia artificial. Construida con
+**React + TypeScript + Vite + Tailwind CSS**, con backend serverless en
+**Netlify Functions**, datos en **Neon** (Postgres + pgvector) y modelos de
+**OpenAI**.
 
-Funciona de dos maneras:
+## Funcionalidades
 
-- **Modo offline (por defecto):** todos los libros se guardan en el navegador
-  (`localStorage`). No necesita cuenta ni conexión.
-- **Modo nube (opcional):** inicia sesión / regístrate con **Neon Auth** y tus
-  libros se guardan por usuario en Neon a través de la **Neon Data API**.
+| | Gratis (offline) | Pro (nube) |
+| --- | --- | --- |
+| Catálogo de libros (CRUD) | ✅ localStorage | ✅ Neon Data API |
+| Búsqueda por filtros | ✅ | ✅ |
+| Exportar Excel / JSON e importar | ✅ | ✅ |
+| Login / registro (Neon Auth) | — | ✅ |
+| Libros por usuario (RLS) | — | ✅ |
+| 🤖 Análisis IA de cada libro | — | ✅ |
+| 🔎 Búsqueda semántica (pgvector) | — | ✅ |
+| 💬 Asistente RAG ("pregunta a tu biblioteca") | — | ✅ |
+| Interfaz en español e inglés | ✅ | ✅ |
 
-Si las variables de entorno de la nube no están configuradas, la app se comporta
-exactamente igual que antes: 100 % offline y sin pantalla de login.
+El **modo offline es siempre gratuito y no requiere configuración**: sin las
+variables de entorno de la nube, la app funciona 100 % en el navegador.
+
+## Arquitectura
+
+```
+┌─────────────────────────── Netlify ────────────────────────────┐
+│                                                                 │
+│  SPA (React + TS + Tailwind)          Functions (/api/*)        │
+│  ├─ modo offline → localStorage       ├─ analyze-book           │
+│  ├─ modo nube → Neon Data API ────┐   ├─ semantic-search        │
+│  └─ IA → fetch /api/* ────────────┼──▶└─ ask-library            │
+│        (token de Neon Auth)       │        │        │           │
+└───────────────────────────────────┼────────┼────────┼───────────┘
+                                    │        │        ▼
+                       RLS por usuario       │     OpenAI API
+                                    ▼        ▼   (chat + embeddings)
+                              Neon Postgres (books, book_analyses·pgvector)
+```
+
+- **La clave de OpenAI nunca llega al navegador**: las funciones serverless
+  hacen todas las llamadas.
+- Cada petición a `/api/*` se autentica verificando el **JWT de Neon Auth**
+  contra el JWKS del proyecto (firma + expiración) y toda consulta SQL filtra
+  por `owner_id`.
+- El **RAG** funciona así: al analizar un libro se genera un análisis
+  estructurado (GPT) y su *embedding* (`text-embedding-3-small`, 1536 dim) que
+  se guarda en `book_analyses` con **pgvector**. Las preguntas del asistente se
+  embeben, se recuperan los libros más cercanos por distancia coseno (índice
+  HNSW) y se responden con ese contexto, citando fuentes.
 
 ## Desarrollo
 
 ```bash
 npm install
-npm run dev        # servidor de desarrollo
-npm run build      # typecheck + build de producción
+npm run dev        # solo SPA (sin funciones IA)
+netlify dev        # SPA + funciones IA en local (requiere Netlify CLI)
+npm run build      # typecheck (app + functions) + build de producción
 npm run lint       # ESLint
-npm run typecheck  # solo comprobación de tipos
+npm run typecheck  # tsc de la app y de las funciones
 ```
 
-## Activar el modo nube (Neon)
+## Puesta en producción
 
-El modo nube es opcional. Para habilitarlo necesitas un proyecto de
-[Neon](https://neon.tech) con **Neon Auth** y la **Data API** activadas.
+### 1. Base de datos (Neon)
 
-### 1. Variables de entorno
+Ejecuta [`db/schema.sql`](db/schema.sql) en el editor SQL de Neon. Crea las
+tablas `books` y `book_analyses`, activa **pgvector**, los índices HNSW y las
+políticas RLS. Es idempotente.
 
-Copia `.env.example` a `.env.local` y rellena los tres valores:
+Requisitos del proyecto Neon: **Neon Auth** y **Data API** habilitados.
 
-| Variable | Dónde encontrarlo |
-| --- | --- |
-| `VITE_STACK_PROJECT_ID` | Neon Console → tu proyecto → **Auth** |
-| `VITE_STACK_PUBLISHABLE_CLIENT_KEY` | Neon Console → tu proyecto → **Auth** |
-| `VITE_NEON_DATA_API_URL` | Neon Console → tu proyecto → **Data API** (URL del endpoint) |
+### 2. Variables de entorno
 
-En Netlify, añade estas mismas variables en *Site configuration → Environment
-variables* y vuelve a desplegar.
+Copia `.env.example` a `.env.local` (local) o configúralas en Netlify
+(*Site configuration → Environment variables*):
 
-### 2. Esquema de la base de datos (con Row-Level Security)
+| Variable | Ámbito | Descripción |
+| --- | --- | --- |
+| `VITE_STACK_PROJECT_ID` | cliente | Neon Console → Auth |
+| `VITE_STACK_PUBLISHABLE_CLIENT_KEY` | cliente | Neon Console → Auth |
+| `VITE_NEON_DATA_API_URL` | cliente | Neon Console → Data API |
+| `DATABASE_URL` | servidor | Cadena de conexión directa de Neon |
+| `OPENAI_API_KEY` | servidor | platform.openai.com |
+| `OPENAI_CHAT_MODEL` | servidor (opcional) | por defecto `gpt-4o-mini` |
+| `OPENAI_EMBEDDING_MODEL` | servidor (opcional) | por defecto `text-embedding-3-small` |
+| `STACK_PROJECT_ID` | servidor (opcional) | si no, usa `VITE_STACK_PROJECT_ID` |
 
-Ejecuta este SQL en el editor SQL de Neon. Crea la tabla `books`, la liga al
-usuario autenticado y activa RLS para que cada persona solo vea sus libros.
+### 3. Despliegue
 
-```sql
-create table if not exists public.books (
-  id         uuid primary key default gen_random_uuid(),
-  owner_id   text not null default (auth.user_id()),
-  titulo     text not null,
-  autor      text not null,
-  year       integer not null,
-  editorial  text not null,
-  imagen     text not null default '',
-  created_at timestamptz not null default now()
-);
+`netlify.toml` ya define el build, el directorio de funciones y las rutas
+`/api/*`. Con hacer push a la rama desplegada es suficiente.
 
--- Cada usuario solo puede ver y modificar sus propios libros.
-alter table public.books enable row level security;
-
-create policy "Books are private to their owner"
-  on public.books
-  for all
-  to authenticated
-  using (owner_id = (auth.user_id()))
-  with check (owner_id = (auth.user_id()));
-
--- Exponer la tabla a usuarios autenticados a través de la Data API.
-grant usage on schema public to authenticated;
-grant select, insert, update, delete on public.books to authenticated;
-```
-
-> `auth.user_id()` lo proporciona Neon Auth y devuelve el id del usuario del JWT.
-> Si tu proyecto usa nombres distintos, sigue la guía vigente de
-> [Neon Data API + Neon Auth](https://neon.tech/docs/guides/neon-auth).
-
-### 3. Cómo funciona en la app
-
-- El selector **Offline / Nube** aparece en la cabecera solo cuando las tres
-  variables están presentes.
-- En **Nube**, si no hay sesión se muestra el panel de inicio de sesión /
-  registro. Tras autenticarte, la app carga tus libros desde la Data API.
-- Cada petición a la Data API se firma con el access token de Neon Auth, así que
-  las políticas RLS garantizan que solo accedes a tus propios datos.
-
-## Arquitectura
+## Estructura del código
 
 ```
+netlify/functions/       # Backend serverless (TypeScript)
+  lib/{auth,db,openai,http}.ts
+  analyze-book.ts        # análisis GPT + embedding → book_analyses
+  semantic-search.ts     # búsqueda por similitud coseno (pgvector)
+  ask-library.ts         # RAG: retrieve → prompt → respuesta con fuentes
+db/schema.sql            # esquema completo (pgvector, RLS, índices)
 src/
-  lib/config.ts            # lee las env vars y deduce si la nube está configurada
-  lib/stack.ts             # cliente de Neon Auth (solo si está configurado)
-  auth/AuthContext.ts      # estado de auth para toda la app (offline por defecto)
-  auth/CloudAuthProvider   # puente con los hooks de Neon Auth
-  auth/AuthPanel.tsx       # formulario de login / registro
-  books/repository.ts      # interfaz común: implementación local y de nube
-  books/useBooks.ts        # hook de estado (cargar/añadir/borrar/importar)
-  App.tsx                  # UI + selector de modo
+  i18n/                  # diccionarios ES/EN tipados + provider
+  lib/{config,stack,ai}.ts
+  auth/                  # Neon Auth: contexto, provider, panel de acceso
+  books/                 # repositorio local/nube + hook de estado
+  ai/                    # modales de análisis y asistente IA
+  App.tsx                # UI, selector de modo/idioma, planes
 ```
 
-El resto de la app (formulario en diálogo, FAB móvil, filtros, exportar/importar)
-es idéntico en ambos modos: solo cambia de dónde se leen y escriben los libros.
+## Hoja de ruta
+
+- Facturación real (Stripe) para el plan Pro
+- Organizaciones multi-usuario y catálogos compartidos (plan Bibliotecas)
+- Límites de uso y colas para las llamadas de IA
+- Importación masiva (MARC/CSV) para bibliotecas institucionales

@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "./i18n/I18nContext";
 import type { Filters } from "./types";
 
 interface FiltroLibrosProps {
@@ -7,6 +8,8 @@ interface FiltroLibrosProps {
 }
 
 const FiltroLibros = ({ filtros, setFiltros }: FiltroLibrosProps) => {
+  const { t } = useI18n();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const finalValue = name === "year" ? (value === "" ? null : Number(value)) : value;
@@ -25,14 +28,14 @@ const FiltroLibros = ({ filtros, setFiltros }: FiltroLibrosProps) => {
       <div className="mb-3 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
           <SearchIcon className="h-4 w-4 text-brand-500" />
-          Buscar
+          {t("filters.title")}
         </h2>
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
             className="text-xs font-semibold text-brand-600 hover:text-brand-800"
           >
-            Limpiar filtros
+            {t("filters.clear")}
           </button>
         )}
       </div>
@@ -40,11 +43,11 @@ const FiltroLibros = ({ filtros, setFiltros }: FiltroLibrosProps) => {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label className="field-label" htmlFor="filtro-titulo">
-            Título
+            {t("filters.bookTitle")}
           </label>
           <input
             id="filtro-titulo"
-            placeholder="Buscar por título"
+            placeholder={t("filters.bookTitlePlaceholder")}
             className="field"
             type="text"
             name="titulo"
@@ -55,11 +58,11 @@ const FiltroLibros = ({ filtros, setFiltros }: FiltroLibrosProps) => {
         </div>
         <div>
           <label className="field-label" htmlFor="filtro-autor">
-            Autor
+            {t("filters.author")}
           </label>
           <input
             id="filtro-autor"
-            placeholder="Buscar por autor"
+            placeholder={t("filters.authorPlaceholder")}
             className="field"
             type="text"
             name="autor"
@@ -70,11 +73,11 @@ const FiltroLibros = ({ filtros, setFiltros }: FiltroLibrosProps) => {
         </div>
         <div>
           <label className="field-label" htmlFor="filtro-year">
-            Año
+            {t("filters.year")}
           </label>
           <input
             id="filtro-year"
-            placeholder="Buscar por año"
+            placeholder={t("filters.yearPlaceholder")}
             className="field"
             type="number"
             name="year"
@@ -85,11 +88,11 @@ const FiltroLibros = ({ filtros, setFiltros }: FiltroLibrosProps) => {
         </div>
         <div>
           <label className="field-label" htmlFor="filtro-editorial">
-            Editorial
+            {t("filters.publisher")}
           </label>
           <input
             id="filtro-editorial"
-            placeholder="Buscar por editorial"
+            placeholder={t("filters.publisherPlaceholder")}
             className="field"
             type="text"
             name="editorial"

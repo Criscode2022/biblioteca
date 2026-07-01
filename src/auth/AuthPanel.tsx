@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useI18n } from "../i18n/I18nContext";
 import { useAuth } from "./AuthContext";
 
 type Tab = "signin" | "signup";
 
 const AuthPanel = () => {
+  const { t } = useI18n();
   const { signIn, signUp } = useAuth();
   const [tab, setTab] = useState<Tab>("signin");
   const [email, setEmail] = useState("");
@@ -21,7 +23,7 @@ const AuthPanel = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Introduce tu correo y contraseña.");
+      setError(t("auth.errorMissing"));
       return;
     }
     setSubmitting(true);
@@ -30,18 +32,16 @@ const AuthPanel = () => {
       ? await signUp(email, password)
       : await signIn(email, password);
     setSubmitting(false);
-    if (!result.ok) setError(result.error ?? "No se pudo completar la acción.");
+    if (!result.ok) setError(result.error ?? t("auth.errorGeneric"));
     // On success the user becomes available and this panel unmounts.
   };
 
   return (
     <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
       <h2 className="font-serif text-2xl font-bold text-slate-900">
-        {isSignup ? "Crear cuenta" : "Iniciar sesión"}
+        {isSignup ? t("auth.title.signUp") : t("auth.title.signIn")}
       </h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Accede para sincronizar tu biblioteca en la nube.
-      </p>
+      <p className="mt-1 text-sm text-slate-500">{t("auth.subtitle")}</p>
 
       <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
         <button
@@ -51,7 +51,7 @@ const AuthPanel = () => {
             !isSignup ? "bg-white text-brand-700 shadow-sm" : "text-slate-500"
           }`}
         >
-          Iniciar sesión
+          {t("auth.signIn")}
         </button>
         <button
           type="button"
@@ -60,21 +60,21 @@ const AuthPanel = () => {
             isSignup ? "bg-white text-brand-700 shadow-sm" : "text-slate-500"
           }`}
         >
-          Registrarse
+          {t("auth.signUp")}
         </button>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
         <div>
           <label className="field-label" htmlFor="auth-email">
-            Correo electrónico
+            {t("auth.email")}
           </label>
           <input
             id="auth-email"
             type="email"
             autoComplete="email"
             className="field"
-            placeholder="tu@correo.com"
+            placeholder={t("auth.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -82,7 +82,7 @@ const AuthPanel = () => {
         </div>
         <div>
           <label className="field-label" htmlFor="auth-password">
-            Contraseña
+            {t("auth.password")}
           </label>
           <input
             id="auth-password"
@@ -104,10 +104,10 @@ const AuthPanel = () => {
 
         <button type="submit" className="btn-primary" disabled={submitting}>
           {submitting
-            ? "Procesando…"
+            ? t("auth.processing")
             : isSignup
-              ? "Crear cuenta"
-              : "Entrar"}
+              ? t("auth.submit.signUp")
+              : t("auth.submit.signIn")}
         </button>
       </form>
     </div>

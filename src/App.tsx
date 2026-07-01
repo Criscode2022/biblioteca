@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import AiAssistantModal from "./ai/AiAssistantModal";
+import BookAnalysisModal, { SparklesIcon } from "./ai/BookAnalysisModal";
 import AuthPanel from "./auth/AuthPanel";
 import { useAuth } from "./auth/AuthContext";
 import {
@@ -10,10 +12,13 @@ import {
 import { useBooks } from "./books/useBooks";
 import FiltroLibros from "./FiltroLibros";
 import FormularioLibros from "./FormularioLibros";
+import { useI18n } from "./i18n/I18nContext";
+import type { Lang } from "./i18n/translations";
 import ListaLibros from "./ListaLibros";
-import Modal from "./Modal";
 import { cloudConfig, isCloudConfigured } from "./lib/config";
-import type { Filters, NewBook } from "./types";
+import Modal from "./Modal";
+import PlansModal from "./PlansModal";
+import type { Book, Filters, NewBook } from "./types";
 
 const EMPTY_FILTERS: Filters = { titulo: "", autor: "", year: null, editorial: "" };
 
@@ -27,9 +32,13 @@ const initialMode = (): Mode => {
 
 const App = () => {
   const auth = useAuth();
+  const { lang, setLang, t } = useI18n();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [isPlansOpen, setIsPlansOpen] = useState(false);
+  const [analysisBook, setAnalysisBook] = useState<Book | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   // The local repository is stable for the lifetime of the app.
@@ -103,7 +112,7 @@ const App = () => {
       try {
         const parsed = JSON.parse(String(e.target?.result)) as unknown;
         if (!Array.isArray(parsed)) {
-          alert("El archivo no contiene una lista de libros válida.");
+          alert(t("import.invalid"));
           return;
         }
         // Strip ids so each backend assigns its own.
@@ -118,7 +127,7 @@ const App = () => {
           /* error surfaced via the hook */
         });
       } catch {
-        alert("No se pudo leer el archivo. Asegúrate de que sea un JSON válido.");
+        alert(t("import.readError"));
       }
     };
     reader.readAsText(file, "UTF-8");
@@ -127,36 +136,45 @@ const App = () => {
 
   const signedOutCloud = mode === "cloud" && !auth.user;
   const showBooks = !signedOutCloud;
+  // AI needs the serverless backend + an authenticated cloud user.
+  const aiActive = mode === "cloud" && Boolean(auth.user);
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-3 py-6 sm:px-6 sm:py-10">
       <div className="overflow-hidden rounded-3xl bg-white/95 shadow-2xl ring-1 ring-black/5 backdrop-blur">
         {/* Header with background image (kept by request) */}
         <header className="app-header px-6 py-12 text-center sm:px-10 sm:py-16">
-          {auth.cloudAvailable && (
-            <div className="absolute right-3 top-3 flex items-center gap-2 sm:right-5 sm:top-5">
-              <ModeToggle mode={mode} onChange={handleModeChange} />
-              {mode === "cloud" && auth.user && (
-                <AccountChip
-                  email={auth.user.primaryEmail}
-                  onSignOut={() => auth.signOut()}
-                />
-              )}
-            </div>
-          )}
+          <div className="absolute right-3 top-3 flex flex-wrap items-center justify-end gap-2 sm:right-5 sm:top-5">
+            <LangToggle lang={lang} onChange={setLang} />
+            {auth.cloudAvailable && (
+              <>
+                <ModeToggle mode={mode} onChange={handleModeChange} t={t} />
+                {mode === "cloud" && auth.user && (
+                  <AccountChip
+                    email={auth.user.primaryEmail}
+                    fallback={t("account.fallback")}
+                    signOutLabel={t("account.signOut")}
+                    onSignOut={() => auth.signOut()}
+                  />
+                )}
+              </>
+            )}
+          </div>
 
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-200">
-            Tu colección personal
+            {t("header.kicker")}
           </p>
           <h1 className="font-serif text-5xl font-extrabold tracking-tight text-white drop-shadow sm:text-7xl">
             Biblioteca
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm text-slate-200 sm:text-base">
-            Organiza, busca y exporta todos tus libros en un solo lugar.
+            {t("header.subtitle")}
           </p>
           <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium text-white ring-1 ring-white/25 backdrop-blur">
             <BookIcon className="h-4 w-4" />
-            {books.length} {books.length === 1 ? "libro" : "libros"}
+            {t(books.length === 1 ? "header.booksOne" : "header.booksMany", {
+              n: books.length,
+            })}
           </span>
         </header>
 
@@ -164,7 +182,7 @@ const App = () => {
         <main className="min-w-0 p-5 sm:p-8">
           {signedOutCloud ? (
             auth.loading ? (
-              <Spinner label="Comprobando tu sesión…" />
+              <Spinner label={t("status.checkingSession")} />
             ) : (
               <AuthPanel />
             )
@@ -175,8 +193,12 @@ const App = () => {
               <div className="mb-5 flex flex-wrap items-center gap-3">
                 {hasActiveFilters && (
                   <p className="text-sm font-medium text-slate-500">
-                    {filteredBooks.length}{" "}
-                    {filteredBooks.length === 1 ? "resultado" : "resultados"}
+                    {t(
+                      filteredBooks.length === 1
+                        ? "toolbar.resultsOne"
+                        : "toolbar.resultsMany",
+                      { n: filteredBooks.length },
+                    )}
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2 sm:ml-auto">
@@ -184,27 +206,35 @@ const App = () => {
                     className="btn-primary hidden sm:inline-flex"
                     onClick={() => setIsFormOpen(true)}
                   >
-                    <PlusIcon className="h-4 w-4" /> Añadir libro
+                    <PlusIcon className="h-4 w-4" /> {t("toolbar.addBook")}
                   </button>
+                  {aiActive && (
+                    <button
+                      className="btn-secondary !border-brand-200 !text-brand-700"
+                      onClick={() => setIsAssistantOpen(true)}
+                    >
+                      <SparklesIcon className="h-4 w-4" /> {t("toolbar.aiAssistant")}
+                    </button>
+                  )}
                   <button
                     className="btn-secondary"
                     onClick={exportToExcel}
                     disabled={!books.length}
                   >
-                    <DownloadIcon className="h-4 w-4" /> Excel
+                    <DownloadIcon className="h-4 w-4" /> {t("toolbar.excel")}
                   </button>
                   <button
                     className="btn-secondary"
                     onClick={exportToJson}
                     disabled={!books.length}
                   >
-                    <DownloadIcon className="h-4 w-4" /> Exportar JSON
+                    <DownloadIcon className="h-4 w-4" /> {t("toolbar.exportJson")}
                   </button>
                   <button
                     className="btn-secondary"
                     onClick={() => importInputRef.current?.click()}
                   >
-                    <UploadIcon className="h-4 w-4" /> Importar JSON
+                    <UploadIcon className="h-4 w-4" /> {t("toolbar.importJson")}
                   </button>
                   <input
                     ref={importInputRef}
@@ -223,12 +253,13 @@ const App = () => {
               )}
 
               {loading ? (
-                <Spinner label="Cargando tu biblioteca…" />
+                <Spinner label={t("status.loadingLibrary")} />
               ) : (
                 <ListaLibros
                   libros={filteredBooks}
                   deleteBook={deleteBook}
                   hasActiveFilters={hasActiveFilters}
+                  onAnalyze={aiActive ? setAnalysisBook : undefined}
                 />
               )}
             </>
@@ -236,9 +267,15 @@ const App = () => {
         </main>
       </div>
 
-      <footer className="mt-6 text-center text-xs text-slate-400">
-        Biblioteca · {mode === "cloud" ? "Modo nube (Neon)" : "Modo offline"} · React,
-        TypeScript y Tailwind CSS
+      <footer className="mt-6 flex items-center justify-center gap-3 text-xs text-slate-400">
+        <span>{t("footer.text")}</span>
+        <span aria-hidden="true">·</span>
+        <button
+          onClick={() => setIsPlansOpen(true)}
+          className="font-semibold text-slate-300 underline-offset-2 transition hover:text-white hover:underline"
+        >
+          {t("plans.link")}
+        </button>
       </footer>
 
       {/* Add-book dialog */}
@@ -252,11 +289,33 @@ const App = () => {
         </Modal>
       )}
 
+      {/* AI dialogs (cloud mode, signed in) */}
+      {aiActive && auth.user && (
+        <>
+          <AiAssistantModal
+            isOpen={isAssistantOpen}
+            onClose={() => setIsAssistantOpen(false)}
+            user={auth.user}
+          />
+          <BookAnalysisModal
+            book={analysisBook}
+            user={auth.user}
+            onClose={() => setAnalysisBook(null)}
+          />
+        </>
+      )}
+
+      <PlansModal
+        isOpen={isPlansOpen}
+        onClose={() => setIsPlansOpen(false)}
+        currentPlan={aiActive ? "pro" : "free"}
+      />
+
       {/* Mobile floating action button */}
       {showBooks && (
         <button
           onClick={() => setIsFormOpen(true)}
-          aria-label="Añadir libro"
+          aria-label={t("fab.addBook")}
           className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-xl shadow-brand-950/40 transition hover:bg-brand-700 active:scale-95 sm:hidden"
         >
           <PlusIcon className="h-7 w-7" />
@@ -270,12 +329,36 @@ const App = () => {
 /* Small presentational pieces                                         */
 /* ------------------------------------------------------------------ */
 
+const LangToggle = ({
+  lang,
+  onChange,
+}: {
+  lang: Lang;
+  onChange: (lang: Lang) => void;
+}) => (
+  <div className="flex rounded-full bg-white/15 p-1 text-xs font-semibold ring-1 ring-white/25 backdrop-blur">
+    {(["es", "en"] as const).map((value) => (
+      <button
+        key={value}
+        onClick={() => onChange(value)}
+        className={`rounded-full px-2.5 py-1 uppercase transition ${
+          lang === value ? "bg-white text-brand-700" : "text-white/90 hover:text-white"
+        }`}
+      >
+        {value}
+      </button>
+    ))}
+  </div>
+);
+
 const ModeToggle = ({
   mode,
   onChange,
+  t,
 }: {
   mode: Mode;
   onChange: (mode: Mode) => void;
+  t: (key: "mode.offline" | "mode.cloud") => string;
 }) => (
   <div className="flex rounded-full bg-white/15 p-1 text-xs font-semibold ring-1 ring-white/25 backdrop-blur">
     {(["offline", "cloud"] as const).map((value) => (
@@ -286,7 +369,7 @@ const ModeToggle = ({
           mode === value ? "bg-white text-brand-700" : "text-white/90 hover:text-white"
         }`}
       >
-        {value === "offline" ? "Offline" : "Nube"}
+        {value === "offline" ? t("mode.offline") : t("mode.cloud")}
       </button>
     ))}
   </div>
@@ -294,18 +377,22 @@ const ModeToggle = ({
 
 const AccountChip = ({
   email,
+  fallback,
+  signOutLabel,
   onSignOut,
 }: {
   email: string | null;
+  fallback: string;
+  signOutLabel: string;
   onSignOut: () => void;
 }) => (
   <div className="flex items-center gap-2 rounded-full bg-white/15 py-1 pl-3 pr-1 text-xs font-medium text-white ring-1 ring-white/25 backdrop-blur">
-    <span className="hidden max-w-[10rem] truncate sm:inline">{email ?? "Cuenta"}</span>
+    <span className="hidden max-w-[10rem] truncate sm:inline">{email ?? fallback}</span>
     <button
       onClick={onSignOut}
       className="rounded-full bg-white/20 px-2.5 py-1 font-semibold transition hover:bg-white/30"
     >
-      Salir
+      {signOutLabel}
     </button>
   </div>
 );

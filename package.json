@@ -1,23 +1,27 @@
 {
-  "name": "tienda-de-libros",
+  "name": "biblioteca-cloud",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run typecheck && vite build",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.functions.json",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@stackframe/react": "^2.8.108",
     "@supabase/postgrest-js": "^2.108.2",
+    "jose": "^6.2.3",
+    "openai": "^6.45.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/node": "^26.1.0",
     "@types/react": "^18.0.37",
     "@types/react-dom": "^18.0.11",
     "@typescript-eslint/eslint-plugin": "^7.18.0",

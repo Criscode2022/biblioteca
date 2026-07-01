@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { StackProvider, StackTheme } from "@stackframe/react";
 import App from "./App.tsx";
 import { CloudAuthProvider } from "./auth/CloudAuthProvider";
+import { I18nProvider } from "./i18n/I18nProvider";
 import { stackClientApp } from "./lib/stack";
 import "./index.css";
 
@@ -24,5 +25,7 @@ const tree = stackClientApp ? (
 );
 
 ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>{tree}</React.StrictMode>,
+  <React.StrictMode>
+    <I18nProvider>{tree}</I18nProvider>
+  </React.StrictMode>,
 );

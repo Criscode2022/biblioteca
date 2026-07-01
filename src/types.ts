@@ -16,3 +16,40 @@ export interface Filters {
   year: number | null;
   editorial: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* AI (cloud mode)                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface SimilarWork {
+  titulo: string;
+  autor: string;
+  reason: string;
+}
+
+/** Structured analysis produced by the AI backend for a single book. */
+export interface BookAnalysis {
+  summary: string;
+  genre: string;
+  themes: string[];
+  audience: string;
+  significance: string;
+  similarWorks: SimilarWork[];
+}
+
+export interface SemanticResult {
+  id: string;
+  titulo: string;
+  autor: string;
+  year: number;
+  editorial: string;
+  summary: string | null;
+  similarity: number;
+}
+
+export interface AskSource {
+  id: string;
+  titulo: string;
+  autor: string;
+  similarity: number;
+}

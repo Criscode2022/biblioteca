@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { useI18n } from "./i18n/I18nContext";
 import type { NewBook } from "./types";
 
 interface FormularioLibrosProps {
@@ -7,6 +7,7 @@ interface FormularioLibrosProps {
 }
 
 const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
+  const { t } = useI18n();
   const [titulo, setTitulo] = useState("");
   const [autor, setAutor] = useState("");
   const [imagen, setImagen] = useState("");
@@ -29,13 +30,13 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
     e.preventDefault();
 
     if (!titulo || !autor || !year || !editorial) {
-      setErrorMsg("Por favor, rellena todos los campos.");
+      setErrorMsg(t("form.errorRequired"));
       return;
     }
 
     const validYear = parseInt(year, 10);
     if (!validYear || year.length > 5) {
-      setErrorMsg("Por favor, introduce un año válido.");
+      setErrorMsg(t("form.errorYear"));
       return;
     }
 
@@ -45,7 +46,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
       await addLibro({ titulo, autor, year: validYear, editorial, imagen });
       resetForm();
     } catch {
-      setErrorMsg("No se pudo guardar el libro. Inténtalo de nuevo.");
+      setErrorMsg(t("form.errorSave"));
     } finally {
       setSubmitting(false);
     }
@@ -66,18 +67,18 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <h2 className="font-serif text-2xl font-bold text-white">Añadir libro</h2>
-        <p className="mt-1 text-sm text-brand-200">Completa los datos del ejemplar.</p>
+        <h2 className="font-serif text-2xl font-bold text-white">{t("form.title")}</h2>
+        <p className="mt-1 text-sm text-brand-200">{t("form.subtitle")}</p>
       </div>
 
       <div>
         <label className="field-label text-brand-100" htmlFor="titulo">
-          Título *
+          {t("form.bookTitle")}
         </label>
         <input
           id="titulo"
           type="text"
-          placeholder="Ej. Cien años de soledad"
+          placeholder={t("form.bookTitlePlaceholder")}
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
           className="field"
@@ -88,12 +89,12 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
 
       <div>
         <label className="field-label text-brand-100" htmlFor="autor">
-          Autor *
+          {t("form.author")}
         </label>
         <input
           id="autor"
           type="text"
-          placeholder="Ej. Gabriel García Márquez"
+          placeholder={t("form.authorPlaceholder")}
           value={autor}
           onChange={(e) => setAutor(e.target.value)}
           className="field"
@@ -105,7 +106,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="field-label text-brand-100" htmlFor="year">
-            Año *
+            {t("form.year")}
           </label>
           <input
             id="year"
@@ -122,12 +123,12 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
         </div>
         <div>
           <label className="field-label text-brand-100" htmlFor="editorial">
-            Editorial *
+            {t("form.publisher")}
           </label>
           <input
             id="editorial"
             type="text"
-            placeholder="Sudamericana"
+            placeholder={t("form.publisherPlaceholder")}
             value={editorial}
             onChange={(e) => setEditorial(e.target.value)}
             className="field"
@@ -143,7 +144,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
           onClick={() => document.getElementById("fileInput")?.click()}
           className="btn-ghost w-full"
         >
-          {imagen ? "Cambiar carátula" : "Añadir carátula (opcional)"}
+          {imagen ? t("form.changeCover") : t("form.addCover")}
         </button>
         <input
           id="fileInput"
@@ -154,7 +155,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
         />
         {fileName && (
           <p className="mt-2 truncate text-xs text-brand-200">
-            Seleccionado: <strong className="text-white">{fileName}</strong>
+            {t("form.selectedFile")} <strong className="text-white">{fileName}</strong>
           </p>
         )}
       </div>
@@ -170,7 +171,7 @@ const FormularioLibros = ({ addLibro }: FormularioLibrosProps) => {
         disabled={submitting}
         className="btn bg-white text-brand-800 shadow-lg hover:bg-brand-50"
       >
-        {submitting ? "Guardando…" : "Añadir libro"}
+        {submitting ? t("form.saving") : t("form.submit")}
       </button>
     </form>
   );
